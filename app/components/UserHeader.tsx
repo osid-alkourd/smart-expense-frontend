@@ -35,6 +35,12 @@ export default function UserHeader() {
               Upload
             </Link>
             <Link
+              href="/expenses"
+              className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors duration-200"
+            >
+              Expenses
+            </Link>
+            <Link
               href="/profile"
               className="text-blue-600 hover:text-blue-700 px-3 py-2 text-sm font-medium transition-colors duration-200"
             >
@@ -95,6 +101,12 @@ export default function UserHeader() {
               className="text-gray-600 hover:text-gray-900 block px-3 py-2 text-base font-medium transition-colors duration-200"
             >
               Upload
+            </Link>
+            <Link
+              href="/expenses"
+              className="text-gray-600 hover:text-gray-900 block px-3 py-2 text-base font-medium transition-colors duration-200"
+            >
+              Expenses
             </Link>
             <Link
               href="/profile"
