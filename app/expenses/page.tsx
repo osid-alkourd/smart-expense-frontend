@@ -1,8 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { Eye } from "lucide-react";
 import UserHeader from "../components/UserHeader";
 
 export default function AllExpensesPage() {
+  const router = useRouter();
+
   // Static mock data for expenses
   const expenses = [
     {
@@ -62,6 +66,10 @@ export default function AllExpensesPage() {
       category: "Shopping"
     }
   ];
+
+  const handleViewDetails = (expenseId: number) => {
+    router.push(`/expenses/${expenseId}`);
+  };
 
   const handleEdit = (expenseId: number) => {
     // Placeholder for edit functionality
@@ -155,19 +163,28 @@ export default function AllExpensesPage() {
                         {expense.category}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <button
-                        onClick={() => handleEdit(expense.id)}
-                        className="border-blue-500 text-blue-500 hover:bg-blue-50 px-3 py-1 rounded-md border transition duration-200 text-xs"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(expense.id)}
-                        className="border-red-500 text-red-500 hover:bg-red-50 px-3 py-1 rounded-md border transition duration-200 text-xs"
-                      >
-                        Delete
-                      </button>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleViewDetails(expense.id)}
+                          className="border-green-500 text-green-500 hover:bg-green-50 px-2 py-1 rounded-md border transition duration-200 inline-flex items-center justify-center"
+                          title="View Details"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleEdit(expense.id)}
+                          className="border-blue-500 text-blue-500 hover:bg-blue-50 px-3 py-1 rounded-md border transition duration-200 text-xs"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(expense.id)}
+                          className="border-red-500 text-red-500 hover:bg-red-50 px-3 py-1 rounded-md border transition duration-200 text-xs"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

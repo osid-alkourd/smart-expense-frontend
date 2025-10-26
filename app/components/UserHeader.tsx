@@ -29,7 +29,7 @@ export default function UserHeader() {
               Dashboard
             </Link>
             <Link
-              href="/upload"
+              href="/expenses/new"
               className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors duration-200"
             >
               Upload
@@ -97,7 +97,7 @@ export default function UserHeader() {
               Dashboard
             </Link>
             <Link
-              href="/upload"
+              href="/expenses/new"
               className="text-gray-600 hover:text-gray-900 block px-3 py-2 text-base font-medium transition-colors duration-200"
             >
               Upload
