@@ -84,9 +84,7 @@ export default function AllExpensesPage() {
   };
 
   const handleAddNew = () => {
-    // Placeholder for add new expense functionality
-    console.log("Add new expense");
-    alert("Add new expense functionality will be implemented");
+    router.push("/expenses/new");
   };
 
   const formatCurrency = (amount: number) => {
