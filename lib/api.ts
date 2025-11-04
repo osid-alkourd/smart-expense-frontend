@@ -157,6 +157,10 @@ interface ExpensesResponse {
   };
 }
 
+interface ExpenseResponse {
+  expense: Expense;
+}
+
 /**
  * Get access token from localStorage
  */
@@ -168,6 +172,134 @@ function getAuthToken(): string | null {
 }
 
 /**
+ * Handle authentication errors (401 status)
+ * Clears localStorage and redirects to login page
+ */
+function handleAuthError() {
+  if (typeof window !== 'undefined') {
+    // Clear authentication data
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
+    
+    // Redirect to login page
+    window.location.href = '/login';
+  }
+}
+
+/**
+ * Logout user
+ */
+export async function logout(): Promise<ApiResponse<null>> {
+  try {
+    const token = getAuthToken();
+    
+    if (!token) {
+      // If no token, just clear local storage and redirect
+      handleAuthError();
+      return {
+        success: true,
+        message: 'Logged out successfully',
+      };
+    }
+
+    const response = await fetch(`${API_BASE_URL}/auth/logout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const result = await response.json();
+
+    // Clear local storage regardless of response
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
+    }
+
+    // Handle 401 or other errors
+    if (!response.ok) {
+      // Even if logout fails on server, we clear local storage
+      return {
+        success: true,
+        message: result.message || 'Logged out successfully',
+      };
+    }
+
+    return {
+      success: true,
+      message: result.message || 'Logged out successfully',
+    };
+  } catch (error) {
+    // Even on network error, clear local storage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
+    }
+    
+    return {
+      success: true,
+      message: 'Logged out successfully',
+    };
+  }
+}
+
+/**
+ * Fetch a single expense by ID with receipt information
+ */
+export async function getExpenseById(expenseId: string): Promise<ApiResponse<ExpenseResponse>> {
+  try {
+    const token = getAuthToken();
+    
+    if (!token) {
+      handleAuthError();
+      return {
+        success: false,
+        message: 'Authentication required. Please login.',
+        errors: [],
+      };
+    }
+
+    const response = await fetch(`${API_BASE_URL}/expenses/${expenseId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const result = await response.json();
+
+    // Handle 401 Unauthorized - Invalid or expired token
+    if (response.status === 401) {
+      handleAuthError();
+      return {
+        success: false,
+        message: result.message || 'Authentication required. Please login.',
+        errors: result.errors || [],
+      };
+    }
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result.message || 'Failed to fetch expense',
+        errors: result.errors || [],
+      };
+    }
+
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Network error. Please check your connection and try again.',
+      errors: [],
+    };
+  }
+}
+
+/**
  * Fetch all expenses for the authenticated user
  */
 export async function getExpenses(): Promise<ApiResponse<ExpensesResponse>> {
@@ -175,6 +307,7 @@ export async function getExpenses(): Promise<ApiResponse<ExpensesResponse>> {
     const token = getAuthToken();
     
     if (!token) {
+      handleAuthError();
       return {
         success: false,
         message: 'Authentication required. Please login.',
@@ -191,6 +324,16 @@ export async function getExpenses(): Promise<ApiResponse<ExpensesResponse>> {
     });
 
     const result = await response.json();
+
+    // Handle 401 Unauthorized - Invalid or expired token
+    if (response.status === 401) {
+      handleAuthError();
+      return {
+        success: false,
+        message: result.message || 'Authentication required. Please login.',
+        errors: result.errors || [],
+      };
+    }
 
     if (!response.ok) {
       return {

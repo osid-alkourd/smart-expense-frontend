@@ -9,15 +9,21 @@ import {
   User,
   LogOut,
 } from "lucide-react";
+import { logout } from "@/lib/api";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const handleLogout = () => {
-    // TODO: Implement actual logout logic
-    console.log("Logging out...");
-    router.push("/login");
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // Redirect to login page
+      router.push("/login");
+    } catch (error) {
+      // Even if logout fails, redirect to login
+      router.push("/login");
+    }
   };
 
   const navItems = [

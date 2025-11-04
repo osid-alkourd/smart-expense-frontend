@@ -1,8 +1,25 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { logout } from "@/lib/api";
 
 export default function UserHeader() {
+  const router = useRouter();
+
+  const handleLogout = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    try {
+      await logout();
+      // Redirect to login page
+      router.push("/login");
+    } catch (error) {
+      // Even if logout fails, redirect to login
+      router.push("/login");
+    }
+  };
+
   return (
     <header className="bg-white border-b border-gray-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -46,12 +63,12 @@ export default function UserHeader() {
             >
               Profile
             </Link>
-            <Link
-              href="/"
+            <button
+              onClick={handleLogout}
               className="text-red-600 hover:text-red-700 px-3 py-2 text-sm font-medium transition-colors duration-200"
             >
               Logout
-            </Link>
+            </button>
           </nav>
 
           {/* Mobile menu button */}
@@ -114,12 +131,12 @@ export default function UserHeader() {
             >
               Profile
             </Link>
-            <Link
-              href="/"
-              className="text-red-600 hover:text-red-700 block px-3 py-2 text-base font-medium transition-colors duration-200"
+            <button
+              onClick={handleLogout}
+              className="text-red-600 hover:text-red-700 block px-3 py-2 text-base font-medium transition-colors duration-200 w-full text-left"
             >
               Logout
-            </Link>
+            </button>
           </div>
         </div>
       </div>

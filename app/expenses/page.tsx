@@ -13,6 +13,7 @@ interface Expense {
   currency: string;
   date: string;
   category: string;
+  isVerified: boolean;
 }
 
 export default function AllExpensesPage() {
@@ -166,6 +167,9 @@ export default function AllExpensesPage() {
                         Category
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Is Verified
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
@@ -198,6 +202,15 @@ export default function AllExpensesPage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                             {formatCategory(expense.category)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            expense.isVerified 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {expense.isVerified ? 'Verified' : 'Not Verified'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

@@ -3,23 +3,37 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import UserHeader from "../../components/UserHeader";
+import { getExpenseById } from "@/lib/api";
+
+interface Receipt {
+  _id: string;
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  ocrStatus: string;
+  ocrResult?: string;
+  uploadedAt: string;
+}
 
 interface ExpenseDetail {
-  id: string;
-  storeName: string;
-  orderNumber: string;
-  tax: number;
-  total: number;
-  paymentMethod: string;
+  _id: string;
+  merchant: string;
   amount: number;
+  currency: string;
   date: string;
   category: string;
-  receiptImage: string;
-  items: Array<{
-    name: string;
-    quantity: number;
-    price: number;
-  }>;
+  receiptId?: Receipt;
+  ocrText?: string;
+  parsedData?: {
+    parsedMerchant?: string;
+    parsedDate?: string | null;
+    parsedAmount?: number;
+  };
+  paymentMethod?: string;
+  notes?: string;
+  tags: string[];
+  isVerified: boolean;
 }
 
 export default function ExpenseDetailPage() {
@@ -27,42 +41,37 @@ export default function ExpenseDetailPage() {
   const router = useRouter();
   const [expense, setExpense] = useState<ExpenseDetail | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Static mock data - in real app, this would be fetched based on the ID
-  const mockExpense: ExpenseDetail = {
-    id: params.id as string,
-    storeName: "Starbucks Coffee",
-    orderNumber: "SB-2024-001234",
-    tax: 0.36,
-    total: 4.50,
-    paymentMethod: "Credit Card (****1234)",
-    amount: 4.50,
-    date: "2024-01-15",
-    category: "Food & Dining",
-    receiptImage: "/images/sample-receipt.jpg", // Placeholder image
-    items: [
-      { name: "Grande Latte", quantity: 1, price: 4.14 },
-      { name: "Tax", quantity: 1, price: 0.36 }
-    ]
-  };
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate API call
     const fetchExpense = async () => {
       setLoading(true);
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setExpense(mockExpense);
-      setLoading(false);
+      setError(null);
+      
+      try {
+        const response = await getExpenseById(params.id as string);
+        
+        if (response.success && response.data) {
+          setExpense(response.data.expense);
+        } else {
+          setError(response.message || "Failed to load expense");
+        }
+      } catch (err) {
+        setError("An unexpected error occurred. Please try again.");
+      } finally {
+        setLoading(false);
+      }
     };
 
-    fetchExpense();
+    if (params.id) {
+      fetchExpense();
+    }
   }, [params.id]);
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number, currency: string = "USD") => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: currency
     }).format(amount);
   };
 
@@ -72,6 +81,10 @@ export default function ExpenseDetailPage() {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const formatCategory = (category: string) => {
+    return category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
   };
 
   if (loading) {
@@ -88,14 +101,14 @@ export default function ExpenseDetailPage() {
     );
   }
 
-  if (!expense) {
+  if (error || !expense) {
     return (
       <div className="min-h-screen bg-gray-50">
         <UserHeader />
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <h1 className="text-2xl font-semibold text-gray-900 mb-2">Expense Not Found</h1>
-            <p className="text-gray-600 mb-4">The expense you're looking for doesn't exist.</p>
+            <p className="text-gray-600 mb-4">{error || "The expense you're looking for doesn't exist."}</p>
             <button
               onClick={() => router.push('/expenses')}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors duration-200"
@@ -123,25 +136,44 @@ export default function ExpenseDetailPage() {
           {/* Left Column - Receipt Image */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Receipt</h2>
-            <div className="aspect-[4/5] bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
-              <div className="text-center">
-                <svg
-                  className="w-16 h-16 text-gray-400 mx-auto mb-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-                <p className="text-gray-500 text-sm">Receipt Image</p>
-                <p className="text-gray-400 text-xs mt-1">Upload receipt to view image</p>
+            {expense.receiptId?.fileUrl ? (
+              <div className="aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden border border-gray-300">
+                <img
+                  src={expense.receiptId.fileUrl}
+                  alt={expense.receiptId.fileName || "Receipt"}
+                  className="w-full h-full object-contain"
+                />
               </div>
-            </div>
+            ) : (
+              <div className="aspect-[4/5] bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
+                <div className="text-center">
+                  <svg
+                    className="w-16 h-16 text-gray-400 mx-auto mb-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <p className="text-gray-500 text-sm">No Receipt Image</p>
+                  <p className="text-gray-400 text-xs mt-1">Receipt image not available</p>
+                </div>
+              </div>
+            )}
+            {expense.receiptId && (
+              <div className="mt-4 text-sm text-gray-600 space-y-1">
+                <p><span className="font-medium">File:</span> {expense.receiptId.fileName}</p>
+                <p><span className="font-medium">Status:</span> <span className="capitalize">{expense.receiptId.ocrStatus}</span></p>
+                {expense.receiptId.uploadedAt && (
+                  <p><span className="font-medium">Uploaded:</span> {formatDate(expense.receiptId.uploadedAt)}</p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right Column - Expense Details */}
@@ -149,51 +181,70 @@ export default function ExpenseDetailPage() {
             <h2 className="text-lg font-semibold text-gray-900 mb-6">Expense Information</h2>
             
             <div className="space-y-4">
-              {/* Store Name */}
+              {/* Merchant */}
               <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-sm font-medium text-gray-600">Store Name</span>
-                <span className="text-sm text-gray-900">{expense.storeName}</span>
+                <span className="text-sm font-medium text-gray-600">Merchant</span>
+                <span className="text-sm text-gray-900">{expense.merchant || "N/A"}</span>
               </div>
 
-              {/* Order Number */}
+              {/* Amount */}
               <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-sm font-medium text-gray-600">Order Number</span>
-                <span className="text-sm text-gray-900 font-mono">{expense.orderNumber}</span>
+                <span className="text-sm font-medium text-gray-600">Amount</span>
+                <span className="text-sm text-gray-900 font-semibold">{formatCurrency(expense.amount, expense.currency)}</span>
+              </div>
+
+              {/* Currency */}
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-sm font-medium text-gray-600">Currency</span>
+                <span className="text-sm text-gray-900">{expense.currency}</span>
               </div>
 
               {/* Payment Method */}
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-sm font-medium text-gray-600">Payment Method</span>
-                <span className="text-sm text-gray-900">{expense.paymentMethod}</span>
-              </div>
-
-              {/* Items List */}
-              <div className="py-2">
-                <span className="text-sm font-medium text-gray-600 block mb-3">Items</span>
-                <div className="space-y-2">
-                  {expense.items.map((item, index) => (
-                    <div key={index} className="flex justify-between items-center text-sm">
-                      <span className="text-gray-700">
-                        {item.name} {item.quantity > 1 && `(x${item.quantity})`}
-                      </span>
-                      <span className="text-gray-900 font-medium">
-                        {formatCurrency(item.price)}
-                      </span>
-                    </div>
-                  ))}
+              {expense.paymentMethod && (
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-600">Payment Method</span>
+                  <span className="text-sm text-gray-900">{expense.paymentMethod}</span>
                 </div>
-              </div>
+              )}
 
-              {/* Tax */}
+              {/* OCR Text */}
+              {expense.ocrText && (
+                <div className="py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-600 block mb-2">OCR Text</span>
+                  <div className="text-xs text-gray-700 bg-gray-50 p-3 rounded border border-gray-200 font-mono whitespace-pre-wrap max-h-40 overflow-y-auto">
+                    {expense.ocrText}
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              {expense.notes && (
+                <div className="py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-600 block mb-2">Notes</span>
+                  <span className="text-sm text-gray-700">{expense.notes}</span>
+                </div>
+              )}
+
+              {/* Tags */}
+              {expense.tags && expense.tags.length > 0 && (
+                <div className="py-2 border-b border-gray-100">
+                  <span className="text-sm font-medium text-gray-600 block mb-2">Tags</span>
+                  <div className="flex flex-wrap gap-2">
+                    {expense.tags.map((tag, index) => (
+                      <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Verification Status */}
               <div className="flex justify-between items-center py-2 border-t border-gray-200">
-                <span className="text-sm font-medium text-gray-600">Tax</span>
-                <span className="text-sm text-gray-900">{formatCurrency(expense.tax)}</span>
-              </div>
-
-              {/* Total */}
-              <div className="flex justify-between items-center py-2 border-t-2 border-gray-300">
-                <span className="text-base font-semibold text-gray-900">Total</span>
-                <span className="text-lg font-bold text-gray-900">{formatCurrency(expense.total)}</span>
+                <span className="text-sm font-medium text-gray-600">Verification Status</span>
+                <span className={`text-sm font-medium ${expense.isVerified ? 'text-green-600' : 'text-yellow-600'}`}>
+                  {expense.isVerified ? 'Verified' : 'Not Verified'}
+                </span>
               </div>
             </div>
           </div>
@@ -207,7 +258,7 @@ export default function ExpenseDetailPage() {
             {/* Amount */}
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <div className="text-2xl font-bold text-blue-600 mb-1">
-                {formatCurrency(expense.amount)}
+                {formatCurrency(expense.amount, expense.currency)}
               </div>
               <div className="text-sm text-blue-800 font-medium">Amount</div>
             </div>
@@ -223,7 +274,7 @@ export default function ExpenseDetailPage() {
             {/* Category */}
             <div className="text-center p-4 bg-purple-50 rounded-lg">
               <div className="text-lg font-semibold text-purple-600 mb-1">
-                {expense.category}
+                {formatCategory(expense.category)}
               </div>
               <div className="text-sm text-purple-800 font-medium">Category</div>
             </div>
