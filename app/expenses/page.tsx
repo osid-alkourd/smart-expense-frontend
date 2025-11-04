@@ -1,83 +1,60 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Eye } from "lucide-react";
 import UserHeader from "../components/UserHeader";
+import { getExpenses } from "@/lib/api";
+
+interface Expense {
+  _id: string;
+  merchant: string;
+  amount: number;
+  currency: string;
+  date: string;
+  category: string;
+}
 
 export default function AllExpensesPage() {
   const router = useRouter();
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Static mock data for expenses
-  const expenses = [
-    {
-      id: 1,
-      store: "Starbucks",
-      amount: 4.50,
-      date: "2024-01-15",
-      category: "Food & Dining"
-    },
-    {
-      id: 2,
-      store: "Shell Gas Station",
-      amount: 45.20,
-      date: "2024-01-14",
-      category: "Transportation"
-    },
-    {
-      id: 3,
-      store: "Amazon",
-      amount: 89.99,
-      date: "2024-01-13",
-      category: "Shopping"
-    },
-    {
-      id: 4,
-      store: "Whole Foods",
-      amount: 125.30,
-      date: "2024-01-12",
-      category: "Groceries"
-    },
-    {
-      id: 5,
-      store: "Netflix",
-      amount: 15.99,
-      date: "2024-01-11",
-      category: "Entertainment"
-    },
-    {
-      id: 6,
-      store: "CVS Pharmacy",
-      amount: 23.45,
-      date: "2024-01-10",
-      category: "Health & Wellness"
-    },
-    {
-      id: 7,
-      store: "Uber",
-      amount: 12.80,
-      date: "2024-01-09",
-      category: "Transportation"
-    },
-    {
-      id: 8,
-      store: "Target",
-      amount: 67.89,
-      date: "2024-01-08",
-      category: "Shopping"
+  useEffect(() => {
+    fetchExpenses();
+  }, []);
+
+  const fetchExpenses = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await getExpenses();
+      
+      if (response.success && response.data) {
+        setExpenses(response.data.expenses);
+      } else {
+        setError(response.message || "Failed to load expenses");
+      }
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const handleViewDetails = (expenseId: number) => {
+  const handleViewDetails = (expenseId: string) => {
     router.push(`/expenses/${expenseId}`);
   };
 
-  const handleEdit = (expenseId: number) => {
+  const handleEdit = (expenseId: string) => {
     // Placeholder for edit functionality
     console.log("Edit expense:", expenseId);
     alert(`Edit expense with ID: ${expenseId}`);
   };
 
-  const handleDelete = (expenseId: number) => {
+  const handleDelete = (expenseId: string) => {
     // Placeholder for delete functionality
     console.log("Delete expense:", expenseId);
     alert(`Delete expense with ID: ${expenseId}`);
@@ -87,10 +64,10 @@ export default function AllExpensesPage() {
     router.push("/expenses/new");
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number, currency: string = "USD") => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: currency
     }).format(amount);
   };
 
@@ -101,6 +78,47 @@ export default function AllExpensesPage() {
       day: 'numeric'
     });
   };
+
+  const formatCategory = (category: string) => {
+    // Capitalize first letter
+    return category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <UserHeader />
+        <div className="max-w-5xl mx-auto py-10 px-4">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="flex flex-col items-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <p className="mt-4 text-gray-600">Loading expenses...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <UserHeader />
+        <div className="max-w-5xl mx-auto py-10 px-4">
+          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md">
+            <p className="font-medium">Error loading expenses</p>
+            <p className="text-sm mt-1">{error}</p>
+            <button
+              onClick={fetchExpenses}
+              className="mt-4 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition duration-200 text-sm"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -113,93 +131,117 @@ export default function AllExpensesPage() {
         </h1>
 
         {/* Expenses Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              {/* Table Header */}
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Store
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              
-              {/* Table Body */}
-              <tbody className="bg-white divide-y divide-gray-200">
-                {expenses.map((expense) => (
-                  <tr key={expense.id} className="hover:bg-gray-50 transition-colors duration-150">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {expense.store}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-semibold text-gray-900">
-                        {formatCurrency(expense.amount)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {formatDate(expense.date)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {expense.category}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handleViewDetails(expense.id)}
-                          className="border-green-500 text-green-500 hover:bg-green-50 px-2 py-1 rounded-md border transition duration-200 inline-flex items-center justify-center"
-                          title="View Details"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleEdit(expense.id)}
-                          className="border-blue-500 text-blue-500 hover:bg-blue-50 px-3 py-1 rounded-md border transition duration-200 text-xs"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(expense.id)}
-                          className="border-red-500 text-red-500 hover:bg-red-50 px-3 py-1 rounded-md border transition duration-200 text-xs"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {expenses.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+            <p className="text-gray-500 text-lg mb-4">No expenses found</p>
+            <p className="text-gray-400 text-sm mb-6">Get started by adding your first expense</p>
+            <button
+              onClick={handleAddNew}
+              className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition duration-200 font-medium"
+            >
+              + Add New Expense
+            </button>
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  {/* Table Header */}
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Merchant
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Amount
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Currency
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Category
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  
+                  {/* Table Body */}
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {expenses.map((expense) => (
+                      <tr key={expense._id} className="hover:bg-gray-50 transition-colors duration-150">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {expense.merchant}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-semibold text-gray-900">
+                            {formatCurrency(expense.amount, expense.currency)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {expense.currency}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {formatDate(expense.date)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {formatCategory(expense.category)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => handleViewDetails(expense._id)}
+                              className="border-green-500 text-green-500 hover:bg-green-50 px-2 py-1 rounded-md border transition duration-200 inline-flex items-center justify-center"
+                              title="View Details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleEdit(expense._id)}
+                              className="border-blue-500 text-blue-500 hover:bg-blue-50 px-3 py-1 rounded-md border transition duration-200 text-xs"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(expense._id)}
+                              className="border-red-500 text-red-500 hover:bg-red-50 px-3 py-1 rounded-md border transition duration-200 text-xs"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
-        {/* Add New Expense Button */}
-        <div className="mt-8 flex justify-center">
-          <button
-            onClick={handleAddNew}
-            className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition duration-200 font-medium"
-          >
-            + Add New Expense
-          </button>
-        </div>
+            {/* Add New Expense Button */}
+            <div className="mt-8 flex justify-center">
+              <button
+                onClick={handleAddNew}
+                className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition duration-200 font-medium"
+              >
+                + Add New Expense
+              </button>
+            </div>
+          </>
+        )}
+
       </div>
     </div>
   );
