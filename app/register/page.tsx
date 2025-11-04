@@ -2,14 +2,20 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { register } from "@/lib/api";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: ""
   });
+  const [errors, setErrors] = useState<Record<string, string[]>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -17,12 +23,67 @@ export default function RegisterPage() {
       ...prev,
       [name]: value
     }));
+    // Clear errors for this field when user starts typing
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log("Form submitted:", formData);
+    setErrors({});
+    setSuccessMessage("");
+    setIsLoading(true);
+
+    try {
+      const response = await register(formData);
+
+      if (response.success && response.data) {
+        // Store the access token
+        localStorage.setItem("accessToken", response.data.accessToken);
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        
+        setSuccessMessage(response.message || "Registration successful!");
+        
+        // Redirect to login page after a short delay
+        setTimeout(() => {
+          router.push("/login");
+        }, 2000);
+      } else {
+        // Handle validation errors
+        if (response.errors && response.errors.length > 0) {
+          const fieldErrors: Record<string, string[]> = {};
+          
+          response.errors.forEach((error) => {
+            const field = error.field || "general";
+            if (!fieldErrors[field]) {
+              fieldErrors[field] = [];
+            }
+            fieldErrors[field].push(error.message);
+          });
+          
+          setErrors(fieldErrors);
+        } else {
+          setErrors({
+            general: [response.message || "Registration failed. Please try again."]
+          });
+        }
+      }
+    } catch (error) {
+      setErrors({
+        general: ["An unexpected error occurred. Please try again."]
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getFieldErrors = (fieldName: string): string[] => {
+    return errors[fieldName] || [];
   };
 
   return (
@@ -53,6 +114,22 @@ export default function RegisterPage() {
               Sign Up
             </h1>
 
+            {/* Success Message */}
+            {successMessage && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-800 rounded-md text-sm">
+                {successMessage}
+              </div>
+            )}
+
+            {/* General Error Message */}
+            {errors.general && errors.general.length > 0 && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-800 rounded-md text-sm">
+                {errors.general.map((error, index) => (
+                  <p key={index}>{error}</p>
+                ))}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Name Field */}
               <div>
@@ -66,9 +143,21 @@ export default function RegisterPage() {
                   value={formData.name}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    getFieldErrors("name").length > 0
+                      ? "border-red-300"
+                      : "border-gray-300"
+                  }`}
                   placeholder="Enter your full name"
+                  disabled={isLoading}
                 />
+                {getFieldErrors("name").length > 0 && (
+                  <div className="mt-1 text-sm text-red-600">
+                    {getFieldErrors("name").map((error, index) => (
+                      <p key={index}>{error}</p>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Email Field */}
@@ -83,9 +172,21 @@ export default function RegisterPage() {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    getFieldErrors("email").length > 0
+                      ? "border-red-300"
+                      : "border-gray-300"
+                  }`}
                   placeholder="Enter your email"
+                  disabled={isLoading}
                 />
+                {getFieldErrors("email").length > 0 && (
+                  <div className="mt-1 text-sm text-red-600">
+                    {getFieldErrors("email").map((error, index) => (
+                      <p key={index}>{error}</p>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Password Field */}
@@ -100,9 +201,21 @@ export default function RegisterPage() {
                   value={formData.password}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    getFieldErrors("password").length > 0
+                      ? "border-red-300"
+                      : "border-gray-300"
+                  }`}
                   placeholder="Enter your password"
+                  disabled={isLoading}
                 />
+                {getFieldErrors("password").length > 0 && (
+                  <div className="mt-1 text-sm text-red-600">
+                    {getFieldErrors("password").map((error, index) => (
+                      <p key={index}>{error}</p>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Confirm Password Field */}
@@ -117,17 +230,30 @@ export default function RegisterPage() {
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    getFieldErrors("confirmPassword").length > 0
+                      ? "border-red-300"
+                      : "border-gray-300"
+                  }`}
                   placeholder="Confirm your password"
+                  disabled={isLoading}
                 />
+                {getFieldErrors("confirmPassword").length > 0 && (
+                  <div className="mt-1 text-sm text-red-600">
+                    {getFieldErrors("confirmPassword").map((error, index) => (
+                      <p key={index}>{error}</p>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Register Button */}
               <button
                 type="submit"
-                className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors duration-200 font-medium"
+                disabled={isLoading}
+                className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Register
+                {isLoading ? "Registering..." : "Register"}
               </button>
             </form>
 
