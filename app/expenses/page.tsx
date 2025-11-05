@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Eye } from "lucide-react";
 import UserHeader from "../components/UserHeader";
-import { getExpenses } from "@/lib/api";
+import { getExpenses, deleteExpense } from "@/lib/api";
 
 interface Expense {
   _id: string;
@@ -55,10 +55,30 @@ export default function AllExpensesPage() {
     alert(`Edit expense with ID: ${expenseId}`);
   };
 
-  const handleDelete = (expenseId: string) => {
-    // Placeholder for delete functionality
-    console.log("Delete expense:", expenseId);
-    alert(`Delete expense with ID: ${expenseId}`);
+  const handleDelete = async (expenseId: string) => {
+    // Confirm deletion
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this expense? This action cannot be undone."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const response = await deleteExpense(expenseId);
+
+      if (response.success) {
+        // Show success message
+        alert("Expense deleted successfully!");
+        // Refresh the expenses list
+        fetchExpenses();
+      } else {
+        alert(response.message || "Failed to delete expense. Please try again.");
+      }
+    } catch (err) {
+      alert("An unexpected error occurred. Please try again.");
+    }
   };
 
   const handleAddNew = () => {

@@ -1,38 +1,81 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import UserHeader from "../../components/UserHeader";
+import { uploadReceipt } from "@/lib/api";
 
 export default function NewExpensePage() {
+  const router = useRouter();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file type (only images)
+      const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+      if (!allowedImageTypes.includes(file.type)) {
+        setError('Invalid file type. Only JPEG, PNG, WebP, and GIF images are allowed.');
+        setSelectedFile(null);
+        // Reset file input
+        e.target.value = '';
+        return;
+      }
+
+      // Validate file size (max 10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        setError('File size too large. Maximum size is 10MB.');
+        setSelectedFile(null);
+        // Reset file input
+        e.target.value = '';
+        return;
+      }
+
       setSelectedFile(file);
+      setError(null);
+      setSuccessMessage(null);
     }
   };
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      alert("Please select a file to upload");
+      setError("Please select an image to upload");
       return;
     }
 
     setIsUploading(true);
+    setError(null);
+    setSuccessMessage(null);
     
-    // Simulate upload process
-    setTimeout(() => {
-      setIsUploading(false);
-      alert(`File "${selectedFile.name}" uploaded successfully!`);
-      setSelectedFile(null);
-      // Reset file input
-      const fileInput = document.getElementById('file-upload') as HTMLInputElement;
-      if (fileInput) {
-        fileInput.value = '';
+    try {
+      const response = await uploadReceipt(selectedFile);
+
+      if (response.success && response.data) {
+        setSuccessMessage("Receipt uploaded successfully! Processing will begin shortly.");
+        
+        // Reset form
+        setSelectedFile(null);
+        const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+        if (fileInput) {
+          fileInput.value = '';
+        }
+
+        // Redirect to expenses page after a short delay
+        setTimeout(() => {
+          router.push('/expenses');
+        }, 2000);
+      } else {
+        setError(response.message || "Failed to upload receipt. Please try again.");
       }
-    }, 2000);
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -92,7 +135,7 @@ export default function NewExpensePage() {
                 {selectedFile ? selectedFile.name : "Click to upload or drag and drop"}
               </p>
               <p className="text-xs text-gray-500">
-                PNG, JPG, PDF up to 10MB
+                PNG, JPG, WebP, GIF up to 10MB
               </p>
             </div>
           </div>
@@ -101,10 +144,24 @@ export default function NewExpensePage() {
           <input
             id="file-upload"
             type="file"
-            accept="image/*,.pdf"
+            accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
             onChange={handleFileChange}
             className="hidden"
           />
+
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-800 rounded-md text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Success Message */}
+          {successMessage && (
+            <div className="mb-6 p-3 bg-green-50 border border-green-200 text-green-800 rounded-md text-sm">
+              {successMessage}
+            </div>
+          )}
 
           {/* Selected File Display */}
           {selectedFile && (
@@ -121,16 +178,27 @@ export default function NewExpensePage() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                     />
                   </svg>
                   <span className="text-sm text-blue-800 font-medium">
                     {selectedFile.name}
                   </span>
+                  <span className="text-xs text-blue-600 ml-2">
+                    ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                  </span>
                 </div>
                 <button
-                  onClick={() => setSelectedFile(null)}
+                  onClick={() => {
+                    setSelectedFile(null);
+                    setError(null);
+                    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+                    if (fileInput) {
+                      fileInput.value = '';
+                    }
+                  }}
                   className="text-blue-500 hover:text-blue-700"
+                  disabled={isUploading}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

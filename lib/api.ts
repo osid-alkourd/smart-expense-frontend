@@ -353,3 +353,146 @@ export async function getExpenses(): Promise<ApiResponse<ExpensesResponse>> {
   }
 }
 
+/**
+ * Upload a receipt image
+ */
+export async function uploadReceipt(file: File): Promise<ApiResponse<{
+  receipt: {
+    id: string;
+    fileUrl: string;
+    fileName: string;
+    fileSize: number;
+    mimeType: string;
+    ocrStatus: string;
+    uploadedAt: string;
+  };
+}>> {
+  try {
+    const token = getAuthToken();
+    
+    if (!token) {
+      handleAuthError();
+      return {
+        success: false,
+        message: 'Authentication required. Please login.',
+        errors: [],
+      };
+    }
+
+    // Validate file type (only images)
+    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedImageTypes.includes(file.type)) {
+      return {
+        success: false,
+        message: 'Invalid file type. Only JPEG, PNG, WebP, and GIF images are allowed.',
+        errors: [],
+      };
+    }
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      return {
+        success: false,
+        message: 'File size too large. Maximum size is 10MB.',
+        errors: [],
+      };
+    }
+
+    // Create FormData for multipart/form-data upload
+    const formData = new FormData();
+    formData.append('receipt', file);
+
+    const response = await fetch(`${API_BASE_URL}/receipts`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        // Don't set Content-Type header, let browser set it with boundary for FormData
+      },
+      body: formData,
+    });
+
+    const result = await response.json();
+
+    // Handle 401 Unauthorized - Invalid or expired token
+    if (response.status === 401) {
+      handleAuthError();
+      return {
+        success: false,
+        message: result.message || 'Authentication required. Please login.',
+        errors: result.errors || [],
+      };
+    }
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result.message || 'Failed to upload receipt',
+        errors: result.errors || [],
+      };
+    }
+
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Network error. Please check your connection and try again.',
+      errors: [],
+    };
+  }
+}
+
+/**
+ * Delete an expense by ID
+ */
+export async function deleteExpense(expenseId: string): Promise<ApiResponse<null>> {
+  try {
+    const token = getAuthToken();
+    
+    if (!token) {
+      handleAuthError();
+      return {
+        success: false,
+        message: 'Authentication required. Please login.',
+        errors: [],
+      };
+    }
+
+    const response = await fetch(`${API_BASE_URL}/expenses/${expenseId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const result = await response.json();
+
+    // Handle 401 Unauthorized - Invalid or expired token
+    if (response.status === 401) {
+      handleAuthError();
+      return {
+        success: false,
+        message: result.message || 'Authentication required. Please login.',
+        errors: result.errors || [],
+      };
+    }
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result.message || 'Failed to delete expense',
+        errors: result.errors || [],
+      };
+    }
+
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Network error. Please check your connection and try again.',
+      errors: [],
+    };
+  }
+}
+
