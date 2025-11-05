@@ -50,9 +50,7 @@ export default function AllExpensesPage() {
   };
 
   const handleEdit = (expenseId: string) => {
-    // Placeholder for edit functionality
-    console.log("Edit expense:", expenseId);
-    alert(`Edit expense with ID: ${expenseId}`);
+    router.push(`/expenses/edit/${expenseId}`);
   };
 
   const handleDelete = async (expenseId: string) => {

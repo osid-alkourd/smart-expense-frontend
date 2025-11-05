@@ -443,6 +443,69 @@ export async function uploadReceipt(file: File): Promise<ApiResponse<{
 }
 
 /**
+ * Update an expense by ID
+ */
+export async function updateExpense(
+  expenseId: string,
+  updateData: {
+    merchant?: string;
+    amount?: number;
+    category?: string;
+    isVerified?: boolean;
+  }
+): Promise<ApiResponse<ExpenseResponse>> {
+  try {
+    const token = getAuthToken();
+    
+    if (!token) {
+      handleAuthError();
+      return {
+        success: false,
+        message: 'Authentication required. Please login.',
+        errors: [],
+      };
+    }
+
+    const response = await fetch(`${API_BASE_URL}/expenses/${expenseId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(updateData),
+    });
+
+    const result = await response.json();
+
+    // Handle 401 Unauthorized - Invalid or expired token
+    if (response.status === 401) {
+      handleAuthError();
+      return {
+        success: false,
+        message: result.message || 'Authentication required. Please login.',
+        errors: result.errors || [],
+      };
+    }
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result.message || 'Failed to update expense',
+        errors: result.errors || [],
+      };
+    }
+
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Network error. Please check your connection and try again.',
+      errors: [],
+    };
+  }
+}
+
+/**
  * Delete an expense by ID
  */
 export async function deleteExpense(expenseId: string): Promise<ApiResponse<null>> {
