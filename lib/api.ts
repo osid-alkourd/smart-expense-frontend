@@ -161,6 +161,49 @@ interface ExpenseResponse {
   expense: Expense;
 }
 
+interface DashboardYearlySummary {
+  totalAmount: number;
+  expenseCount: number;
+  averageMonthlySpending: number;
+}
+
+interface DashboardTopCategory {
+  name: string;
+  totalAmount: number;
+  percentageOfYear: number;
+}
+
+interface DashboardCategoryBreakdown {
+  category: string;
+  totalAmount: number;
+  expenseCount: number;
+  percentageOfYear: number;
+}
+
+interface DashboardMonthlyComparison {
+  month: number;
+  totalAmount: number;
+  averagePerExpense: number;
+  averagePerDay: number;
+  expenseCount: number;
+}
+
+interface DashboardAllTimeSummary {
+  totalAmount: number;
+  expenseCount: number;
+  categoryCount: number;
+  currentMonthTotal: number;
+}
+
+export interface DashboardData {
+  selectedYear: number;
+  yearlySummary: DashboardYearlySummary;
+  topCategory: DashboardTopCategory | null;
+  categoryBreakdown: DashboardCategoryBreakdown[];
+  monthlyComparison: DashboardMonthlyComparison[];
+  allTimeSummary: DashboardAllTimeSummary;
+}
+
 /**
  * Get access token from localStorage
  */
@@ -169,6 +212,13 @@ function getAuthToken(): string | null {
     return localStorage.getItem('accessToken');
   }
   return null;
+}
+
+/**
+ * Check if user is authenticated
+ */
+export function isAuthenticated(): boolean {
+  return getAuthToken() !== null;
 }
 
 /**
@@ -183,6 +233,86 @@ function handleAuthError() {
     
     // Redirect to login page
     window.location.href = '/login';
+  }
+}
+
+/**
+ * Forgot password - Send reset code to email
+ */
+interface ForgotPasswordData {
+  email: string;
+}
+
+export async function forgotPassword(
+  data: ForgotPasswordData
+): Promise<ApiResponse<null>> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/forget-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result.message || 'Failed to send reset code',
+        errors: result.errors || [],
+      };
+    }
+
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Network error. Please check your connection and try again.',
+      errors: [],
+    };
+  }
+}
+
+/**
+ * Reset password - Update password with verification code
+ */
+interface ResetPasswordData {
+  code: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export async function resetPassword(
+  data: ResetPasswordData
+): Promise<ApiResponse<null>> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result.message || 'Failed to reset password',
+        errors: result.errors || [],
+      };
+    }
+
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Network error. Please check your connection and try again.',
+      errors: [],
+    };
   }
 }
 
@@ -241,6 +371,131 @@ export async function logout(): Promise<ApiResponse<null>> {
     return {
       success: true,
       message: 'Logged out successfully',
+    };
+  }
+}
+
+interface ProfileResponse {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    isEmailConfirmed: boolean;
+    avatarUrl?: string | null;
+  };
+}
+
+/**
+ * Get user profile
+ */
+export async function getProfile(): Promise<ApiResponse<ProfileResponse>> {
+  try {
+    const token = getAuthToken();
+    
+    if (!token) {
+      handleAuthError();
+      return {
+        success: false,
+        message: 'Authentication required. Please login.',
+        errors: [],
+      };
+    }
+
+    const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const result = await response.json();
+
+    // Handle 401 Unauthorized - Invalid or expired token
+    if (response.status === 401) {
+      handleAuthError();
+      return {
+        success: false,
+        message: result.message || 'Authentication required. Please login.',
+        errors: result.errors || [],
+      };
+    }
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result.message || 'Failed to fetch profile',
+        errors: result.errors || [],
+      };
+    }
+
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Network error. Please check your connection and try again.',
+      errors: [],
+    };
+  }
+}
+
+/**
+ * Update user profile
+ */
+interface UpdateProfileData {
+  name: string;
+  newPassword?: string;
+  confirmPassword?: string;
+}
+
+export async function updateProfile(data: UpdateProfileData): Promise<ApiResponse<ProfileResponse>> {
+  try {
+    const token = getAuthToken();
+    
+    if (!token) {
+      handleAuthError();
+      return {
+        success: false,
+        message: 'Authentication required. Please login.',
+        errors: [],
+      };
+    }
+
+    const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+
+    // Handle 401 Unauthorized - Invalid or expired token
+    if (response.status === 401) {
+      handleAuthError();
+      return {
+        success: false,
+        message: result.message || 'Authentication required. Please login.',
+        errors: result.errors || [],
+      };
+    }
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result.message || 'Failed to update profile',
+        errors: result.errors || [],
+      };
+    }
+
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Network error. Please check your connection and try again.',
+      errors: [],
     };
   }
 }
@@ -339,6 +594,57 @@ export async function getExpenses(): Promise<ApiResponse<ExpensesResponse>> {
       return {
         success: false,
         message: result.message || 'Failed to fetch expenses',
+        errors: result.errors || [],
+      };
+    }
+
+    return result;
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Network error. Please check your connection and try again.',
+      errors: [],
+    };
+  }
+}
+
+export async function getDashboardData(
+  year?: number | string
+): Promise<ApiResponse<DashboardData>> {
+  try {
+    const token = getAuthToken();
+
+    if (!token) {
+      return {
+        success: false,
+        message: 'Authentication required. Please login.',
+        errors: [],
+      };
+    }
+
+    const searchParams = year ? `?year=${year}` : '';
+    const response = await fetch(`${API_BASE_URL}/expenses/dashboard${searchParams}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const result = await response.json();
+
+    if (response.status === 401) {
+      return {
+        success: false,
+        message: result.message || 'Authentication required. Please login.',
+        errors: result.errors || [],
+      };
+    }
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result.message || 'Failed to fetch dashboard data',
         errors: result.errors || [],
       };
     }

@@ -1,8 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { isAuthenticated } from "@/lib/api";
 
 export default function PasswordUpdatedPage() {
+  const router = useRouter();
+
+  // Redirect if authenticated
+  useEffect(() => {
+    if (isAuthenticated()) {
+      router.push('/profile');
+    }
+  }, [router]);
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#EAF3FB' }}>
       {/* Main Content */}

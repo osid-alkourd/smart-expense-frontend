@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { isAuthenticated, resetPassword } from "@/lib/api";
 
 export default function ResetPasswordPage() {
   const [formData, setFormData] = useState({
@@ -9,6 +11,17 @@ export default function ResetPasswordPage() {
     newPassword: "",
     confirmPassword: ""
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<{ field?: string; message: string }[]>([]);
+  const router = useRouter();
+
+  // Redirect if authenticated
+  useEffect(() => {
+    if (isAuthenticated()) {
+      router.push('/profile');
+    }
+  }, [router]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -16,12 +29,39 @@ export default function ResetPasswordPage() {
       ...prev,
       [name]: value
     }));
+    setError(null);
+    setErrors([]);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log("Reset password form submitted:", formData);
+    setLoading(true);
+    setError(null);
+    setErrors([]);
+
+    try {
+      const response = await resetPassword({
+        code: formData.verificationCode,
+        newPassword: formData.newPassword,
+        confirmPassword: formData.confirmPassword
+      });
+
+      if (response.success) {
+        // Redirect to password-updated page on success
+        router.push('/password-updated');
+      } else {
+        // Display validation errors
+        if (response.errors && response.errors.length > 0) {
+          setErrors(response.errors);
+        } else {
+          setError(response.message || "Failed to reset password. Please try again.");
+        }
+      }
+    } catch (error) {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -46,6 +86,13 @@ export default function ResetPasswordPage() {
               Enter the verification code and then enter the new password.
             </p>
 
+            {/* Error Message */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600 text-center">{error}</p>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Verification Code Field */}
               <div>
@@ -59,9 +106,16 @@ export default function ResetPasswordPage() {
                   value={formData.verificationCode}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 ${
+                    errors.some(e => e.field === "code") 
+                      ? "border-red-500" 
+                      : "border-gray-300"
+                  }`}
                   placeholder="Enter verification code"
                 />
+                {errors.filter(e => e.field === "code").map((error, index) => (
+                  <p key={index} className="mt-1 text-sm text-red-600">{error.message}</p>
+                ))}
               </div>
 
               {/* New Password Field */}
@@ -76,9 +130,16 @@ export default function ResetPasswordPage() {
                   value={formData.newPassword}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 ${
+                    errors.some(e => e.field === "newPassword") 
+                      ? "border-red-500" 
+                      : "border-gray-300"
+                  }`}
                   placeholder="Enter new password"
                 />
+                {errors.filter(e => e.field === "newPassword").map((error, index) => (
+                  <p key={index} className="mt-1 text-sm text-red-600">{error.message}</p>
+                ))}
               </div>
 
               {/* Confirm New Password Field */}
@@ -93,17 +154,29 @@ export default function ResetPasswordPage() {
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 ${
+                    errors.some(e => e.field === "confirmPassword") 
+                      ? "border-red-500" 
+                      : "border-gray-300"
+                  }`}
                   placeholder="Confirm new password"
                 />
+                {errors.filter(e => e.field === "confirmPassword").map((error, index) => (
+                  <p key={index} className="mt-1 text-sm text-red-600">{error.message}</p>
+                ))}
               </div>
 
               {/* Update Password Button */}
               <button
                 type="submit"
-                className="w-full bg-blue-700 text-white py-2 px-4 rounded-md hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 font-medium"
+                disabled={loading}
+                className={`w-full py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 font-medium ${
+                  loading
+                    ? "bg-blue-400 cursor-not-allowed text-white"
+                    : "bg-blue-700 text-white hover:bg-blue-800"
+                }`}
               >
-                Update the Password
+                {loading ? "Updating..." : "Update the Password"}
               </button>
             </form>
 

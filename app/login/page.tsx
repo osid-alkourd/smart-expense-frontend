@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { login } from "@/lib/api";
+import { login, isAuthenticated } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,6 +14,12 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      router.replace("/dashboard");
+    }
+  }, [router]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -141,7 +147,7 @@ export default function LoginPage() {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
-                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 ${
                     getFieldErrors("email").length > 0
                       ? "border-red-300"
                       : "border-gray-300"
@@ -170,7 +176,7 @@ export default function LoginPage() {
                   value={formData.password}
                   onChange={handleInputChange}
                   required
-                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 ${
                     getFieldErrors("password").length > 0
                       ? "border-red-300"
                       : "border-gray-300"
