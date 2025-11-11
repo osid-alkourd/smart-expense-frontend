@@ -52,6 +52,9 @@ export default function RegisterPage() {
         // Store the access token
         localStorage.setItem("accessToken", response.data.accessToken);
         localStorage.setItem("user", JSON.stringify(response.data.user));
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("auth-change"));
+        }
         
         setSuccessMessage(response.message || "Registration successful!");
         

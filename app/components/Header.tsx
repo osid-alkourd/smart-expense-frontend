@@ -1,10 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { isAuthenticated } from "@/lib/api";
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
+
+  useEffect(() => {
+    const updateAuthState = () => {
+      setIsAuthed(isAuthenticated());
+    };
+
+    updateAuthState();
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("storage", updateAuthState);
+      window.addEventListener("auth-change", updateAuthState);
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("storage", updateAuthState);
+        window.removeEventListener("auth-change", updateAuthState);
+      }
+    };
+  }, []);
 
   const scrollToHowItWorks = () => {
     const element = document.getElementById('how-it-works');
@@ -42,18 +64,29 @@ export default function Header() {
             >
               How it Works
             </button>
-            <Link 
-              href="/login" 
-              className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
-            >
-              Login
-            </Link>
-            <Link 
-              href="/register" 
-              className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors"
-            >
-              Register
-            </Link>
+            {isAuthed ? (
+              <Link 
+                href="/dashboard" 
+                className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link 
+                  href="/login" 
+                  className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors"
+                >
+                  Login
+                </Link>
+                <Link 
+                  href="/register" 
+                  className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                >
+                  Register
+                </Link>
+              </>
+            )}
           </nav>
 
           {/* Mobile menu button */}
@@ -78,6 +111,7 @@ export default function Header() {
               <Link 
                 href="/" 
                 className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
               >
                 Home
               </Link>
@@ -90,18 +124,32 @@ export default function Header() {
               >
                 How it Works
               </button>
-              <Link 
-                href="/login" 
-                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
-              >
-                Login
-              </Link>
-              <Link 
-                href="/register" 
-                className="block px-3 py-2 text-base font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
-              >
-                Register
-              </Link>
+              {isAuthed ? (
+                <Link 
+                  href="/dashboard" 
+                  className="block px-3 py-2 text-base font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link 
+                    href="/login" 
+                    className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Login
+                  </Link>
+                  <Link 
+                    href="/register" 
+                    className="block px-3 py-2 text-base font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Register
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         )}

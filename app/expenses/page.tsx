@@ -158,7 +158,7 @@ export default function AllExpensesPage() {
               onClick={handleAddNew}
               className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition duration-200 font-medium"
             >
-              + Add New Expense
+              + Add New receipt
             </button>
           </div>
         ) : (
@@ -261,13 +261,13 @@ export default function AllExpensesPage() {
               </div>
             </div>
 
-            {/* Add New Expense Button */}
+            {/* Add New receipt Button */}
             <div className="mt-8 flex justify-center">
               <button
                 onClick={handleAddNew}
                 className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition duration-200 font-medium"
               >
-                + Add New Expense
+                + Add New receipt
               </button>
             </div>
           </>

@@ -101,10 +101,10 @@ export default function NewExpensePage() {
         <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md text-center">
           {/* Title & Description */}
           <h1 className="text-2xl font-semibold text-gray-800 mb-2">
-            Add New Expense
+            Add New receipt
           </h1>
           <p className="text-sm text-gray-500 mb-6">
-            Upload an image of your expense to record your expenses automatically.
+            Upload an image of your receipt to record your expenses automatically.
           </p>
 
           {/* File Upload Area */}
@@ -243,7 +243,7 @@ export default function NewExpensePage() {
                 Uploading...
               </div>
             ) : (
-              "Upload Expense"
+              "Upload receipt"
             )}
           </button>
 

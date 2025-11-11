@@ -230,6 +230,7 @@ function handleAuthError() {
     // Clear authentication data
     localStorage.removeItem('accessToken');
     localStorage.removeItem('user');
+    window.dispatchEvent(new Event('auth-change'));
     
     // Redirect to login page
     window.location.href = '/login';
@@ -346,6 +347,7 @@ export async function logout(): Promise<ApiResponse<null>> {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
+      window.dispatchEvent(new Event('auth-change'));
     }
 
     // Handle 401 or other errors
@@ -366,6 +368,7 @@ export async function logout(): Promise<ApiResponse<null>> {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
+      window.dispatchEvent(new Event('auth-change'));
     }
     
     return {

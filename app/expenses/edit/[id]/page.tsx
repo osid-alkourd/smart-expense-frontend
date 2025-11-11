@@ -232,7 +232,7 @@ export default function EditExpensePage() {
                 name="merchant"
                 value={formData.merchant}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                 placeholder="Enter merchant name"
                 disabled={saving}
               />
@@ -256,7 +256,7 @@ export default function EditExpensePage() {
                   step="0.01"
                   min="0.01"
                   required
-                  className="w-full pl-7 pr-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-7 pr-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                   placeholder="0.00"
                   disabled={saving}
                 />
@@ -277,7 +277,7 @@ export default function EditExpensePage() {
                 value={formData.category}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                 disabled={saving}
               >
                 <option value="">Select a category</option>
